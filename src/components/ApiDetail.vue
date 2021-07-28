@@ -17,15 +17,13 @@
           <el-form-item class="editor-header-input">
             <span style="color: white">主题: &nbsp;&nbsp;&nbsp;</span>
             <el-select v-model="theme" placeholder="请选择" @change="changeTheme" size="mini">
-              <el-option key="1" label="dracula" value="ace/theme/dracula" />
-              <el-option key="2" label="clouds" value='ace/theme/clouds' />
-              <el-option key="3" label="eclipse" value='ace/theme/eclipse' />
-              <el-option key="4" label="github" value='ace/theme/github' />
+              <el-option key="1" label="dracula" value="ace/theme/dracula"/>
+              <el-option key="2" label="clouds" value='ace/theme/clouds'/>
             </el-select>
           </el-form-item>
           <el-form-item class="editor-header-input">
             <span style="color: white">启用编辑: &nbsp;&nbsp;&nbsp;</span>
-            <el-switch v-model="canEdit" @change="changeEdit" />
+            <el-switch v-model="canEdit" @change="changeEdit"/>
           </el-form-item>
           <el-form-item class="editor-header-input">
             <el-button
@@ -49,40 +47,80 @@
         <div ref="ace"></div>
       </el-form-item>
     </el-form>
+    <el-drawer
+        size="40%"
+        :title="'测试接口 ['+rule.name+']'"
+        v-model="testDrawer"
+        direction="rtl"
+        @opened="loadTestFormEditor"
+    >
+      <div class="drawer-form">
+        <el-form :model="testForm" label-width="60px" v-loading="testFormLoading">
+          <el-form-item label="方法">
+            <el-select v-model="testForm.method" placeholder="请选择">
+              <el-option label="POST" value="post"></el-option>
+              <el-option label="GET" value="get"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="url">
+            <el-input disabled v-model="testForm.url" autocomplete="off"></el-input>
+          </el-form-item>
+          <el-form-item label="参数">
+            <div ref="testFormAce"></div>
+          </el-form-item>
+          <el-form-item label="返回值">
+            <el-input type="textarea" :rows="5" placeholder="返回值" v-model="testForm.response" />
+          </el-form-item>
+          <el-form-item style="text-align: center">
+            <el-button type="primary" @click="testApi">提交</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script>
 import ace from 'ace-builds'
 import * as RuleApi from '@/api/RuleApi'
+import axios from "axios";
 /**
  * 如果要引入其他语言模式，在这里加上对应的js包
  *  import 'ace-builds/src-min-noconflict/mode-java'
  */
 import 'ace-builds/src-min-noconflict/mode-drools'
+import 'ace-builds/src-min-noconflict/mode-json'
 import 'ace-builds/src-min-noconflict/theme-dracula'
 import 'ace-builds/src-min-noconflict/theme-clouds'
-import 'ace-builds/src-min-noconflict/theme-eclipse'
-import 'ace-builds/src-min-noconflict/theme-github'
+
 
 export default {
   name: "ApiDetail",
-  components: {
-  },
+  components: {},
   data() {
     return {
       id: this.$route.query.id,
       editor: null,
+      testFormEditor: null,
       theme: 'ace/theme/dracula',
       canEdit: false,
       isEdit: false,
       saveLoading: false,
       initLoading: true,
+      testFormLoading: false,
+      testDrawer: false,
       rule: {
         name: null,
         id: null,
         description: null,
         ruleText: null
+      },
+      testForm: {
+        id: null,
+        url: '',
+        method: 'POST',
+        param: {},
+        response: ''
       }
     }
   },
@@ -114,11 +152,67 @@ export default {
       })
     },
     onTest() {
-      console.log('test')
+      if (!this.rule.id) {
+        this.$message.error("请先保存规则")
+        return
+      }
+
+      this.testForm.id = this.rule.id
+      this.testForm.url = '/rule/dynamic/' + this.rule.id
+      this.testForm.method = 'POST'
+      this.testDrawer = true
+    },
+    loadTestFormEditor() {
+      this.testFormEditor = ace.edit(this.$refs.testFormAce, {
+        maxLines: 10, // 最大行数，超过会自动出现滚动条
+        minLines: 5, // 最小行数，还未到最大行数时，编辑器会自动伸缩大小
+        fontSize: 16, // 编辑器内字体大小
+        theme: 'ace/theme/clouds', // 默认设置的主题
+        mode: 'ace/mode/json', // 默认设置的语言模式
+        tabSize: 4, // 制表符设置为 4 个空格大小
+        readOnly: false,
+        highlightActiveLine: true,
+        value: '{\n}\n\n\n\n'
+      })
     },
     goBack() {
       this.$router.go(-1)
+    },
+    testApi() {
+      let value = this.testFormEditor.getValue();
+
+      let param;
+      try {
+        param = JSON.parse(value);
+        if (!(typeof param == 'object' && param)) {
+          this.$message.error("请检查json格式是否正确")
+          return;
+        }
+      } catch (e) {
+        this.$message.error("请检查json格式是否正确")
+        return;
+      }
+
+      let request = {
+        url: this.testForm.url,
+        method: this.testForm.method
+      }
+
+      if (this.testForm.method === 'get') {
+        request.params = param
+      } else {
+        request.data = param
+      }
+
+      this.testFormLoading = true;
+      console.log('request', request)
+      axios(request).then(res => {
+        this.testForm.response = JSON.stringify(res.data, null, '    ')
+      }).finally(() => {
+        this.testFormLoading = false
+      })
     }
+
   },
   mounted() {
     this.editor = ace.edit(this.$refs.ace, {
@@ -154,11 +248,16 @@ export default {
 
 .editor-header {
   text-align: right;
-  border: 1px #ccc!important;
+  border: 1px #ccc !important;
   border-radius: 5px 5px 0 0;
   background-color: #282a36;
 }
+
 .el-form-item--mini.el-form-item.editor-header-input {
   margin-bottom: 5px;
+}
+
+.drawer-form {
+  padding: 20px;
 }
 </style>
