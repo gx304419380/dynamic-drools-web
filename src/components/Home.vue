@@ -36,6 +36,7 @@
           prop="description"
           min-width="200"
           header-align="center"
+          show-overflow-tooltip
           label="备注">
       </el-table-column>
       <el-table-column
@@ -64,7 +65,7 @@
 </template>
 
 <script>
-import axios from 'axios'
+import * as RuleApi from '@/api/RuleApi'
 
 export default {
   name: "Home",
@@ -82,10 +83,7 @@ export default {
   },
   methods: {
     searchApi() {
-      console.log(this.condition)
-      axios.get('/rule', {
-        params: this.condition
-      }).then(res => {
+      RuleApi.getRulePage(this.condition).then(res => {
         if (res.data.code === 0) {
           this.tableData = res.data.data.content;
           this.total = res.data.data.totalElements;
@@ -95,7 +93,7 @@ export default {
       })
     },
     addApi() {
-      this.$router.push("/addApi")
+      this.$router.push("/apiDetail")
     },
     apiDetail(row) {
       this.$router.push({path: '/apiDetail', query: {id: row.id}})

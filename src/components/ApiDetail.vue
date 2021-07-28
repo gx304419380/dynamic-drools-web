@@ -1,7 +1,9 @@
 <template>
   <div class="common-div">
-    <el-form label-width="60px" :model="rule">
-      <el-form-item label="ID">
+    <el-page-header @back="goBack" content="规则详情"></el-page-header>
+    <el-divider></el-divider>
+    <el-form label-width="60px" :model="rule" v-loading="initLoading">
+      <el-form-item label="ID" v-if="isEdit">
         <el-input v-model="rule.id" disabled></el-input>
       </el-form-item>
       <el-form-item label="名称">
@@ -25,6 +27,24 @@
             <span style="color: white">启用编辑: &nbsp;&nbsp;&nbsp;</span>
             <el-switch v-model="canEdit" @change="changeEdit" />
           </el-form-item>
+          <el-form-item class="editor-header-input">
+            <el-button
+                type="primary"
+                @click="onSubmit"
+                size="mini"
+                round
+                v-loading.fullscreen.lock="saveLoading">
+              保存
+            </el-button>
+            <el-button
+                type="danger"
+                @click="onTest"
+                size="mini"
+                round
+                v-loading.fullscreen.lock="saveLoading">
+              测试
+            </el-button>
+          </el-form-item>
         </el-form>
         <div ref="ace"></div>
       </el-form-item>
@@ -33,9 +53,12 @@
 </template>
 
 <script>
-import axios from "axios";
 import ace from 'ace-builds'
-// import 'ace-builds/src-min-noconflict/mode-java'
+import * as RuleApi from '@/api/RuleApi'
+/**
+ * 如果要引入其他语言模式，在这里加上对应的js包
+ *  import 'ace-builds/src-min-noconflict/mode-java'
+ */
 import 'ace-builds/src-min-noconflict/mode-drools'
 import 'ace-builds/src-min-noconflict/theme-dracula'
 import 'ace-builds/src-min-noconflict/theme-clouds'
@@ -52,6 +75,9 @@ export default {
       editor: null,
       theme: 'ace/theme/dracula',
       canEdit: false,
+      isEdit: false,
+      saveLoading: false,
+      initLoading: true,
       rule: {
         name: null,
         id: null,
@@ -63,27 +89,41 @@ export default {
   methods: {
     getDetail() {
       let id = this.$route.query.id
-      axios.get('/rule/' + id)
-          .then(res => {
-            if (res.data.code === 0) {
-              this.rule = res.data.data;
-              this.editor.setValue(this.rule.ruleText)
-            } else {
-              this.$message.error('查询失败：' + res.data.message)
-            }
-          })
+      RuleApi.getRule(id).then(res => {
+        this.rule = res.data.data;
+        this.editor.setValue(this.rule.ruleText)
+      })
     },
     changeTheme(val) {
       this.editor.setTheme(val)
     },
     changeEdit(val) {
       this.editor.setReadOnly(!val)
+    },
+    onEditorChange() {
+      this.rule.ruleText = this.editor.getValue();
+    },
+    onSubmit() {
+      this.saveLoading = true
+      RuleApi.saveRule(this.rule).then(res => {
+        this.rule.id = res.data.data
+        this.isEdit = true
+        this.$message.success("保存成功")
+      }).finally(() => {
+        this.saveLoading = false
+      })
+    },
+    onTest() {
+      console.log('test')
+    },
+    goBack() {
+      this.$router.go(-1)
     }
   },
   mounted() {
     this.editor = ace.edit(this.$refs.ace, {
       maxLines: 25, // 最大行数，超过会自动出现滚动条
-      minLines: 10, // 最小行数，还未到最大行数时，编辑器会自动伸缩大小
+      minLines: 25, // 最小行数，还未到最大行数时，编辑器会自动伸缩大小
       fontSize: 16, // 编辑器内字体大小
       theme: 'ace/theme/dracula', // 默认设置的主题
       mode: 'ace/mode/drools', // 默认设置的语言模式
@@ -93,7 +133,16 @@ export default {
       value: ''
     })
 
-    this.getDetail();
+    this.editor.on('change', this.onEditorChange)
+
+    if (this.$route.query.id) {
+      this.getDetail();
+      this.isEdit = true;
+    } else {
+      this.canEdit = true;
+      this.editor.setReadOnly(false)
+    }
+    this.initLoading = false
   }
 }
 </script>

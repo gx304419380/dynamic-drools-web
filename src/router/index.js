@@ -1,6 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import Home from "@/components/Home";
-import ApiEditor from "@/components/ApiEditor";
 import ApiDetail from "@/components/ApiDetail";
 
 const constantRoutes = [
@@ -11,10 +10,6 @@ const constantRoutes = [
     {
         path: "/home",
         component: Home
-    },
-    {
-        path: '/addApi',
-        component: ApiEditor
     },
     {
         path: '/apiDetail',
