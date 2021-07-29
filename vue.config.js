@@ -5,7 +5,7 @@ module.exports = {
         overlay: false,
         proxy: {
             '/rule': {
-                target: 'http://localhost:8080/'
+                target: 'http://localhost:9999/'
             }
         }
     }

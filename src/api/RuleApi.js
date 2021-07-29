@@ -53,7 +53,7 @@ rule "discount_rule_4"
         jdbc: JdbcTemplate()
     then
         log.info("param map={}", param);
-        r.setData("hello world!");
+        result.setData("hello world!");
         log.info("result = {}", result);
 end
 
