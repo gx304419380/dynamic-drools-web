@@ -106,7 +106,7 @@ export default {
       canEdit: false,
       isEdit: false,
       saveLoading: false,
-      initLoading: true,
+      initLoading: false,
       testFormLoading: false,
       testDrawer: false,
       rule: {
@@ -229,14 +229,19 @@ export default {
 
     this.editor.on('change', this.onEditorChange)
 
+    //如果是修改操作
     if (this.$route.query.id) {
+      this.initLoading = true
       this.getDetail();
       this.isEdit = true;
-    } else {
-      this.canEdit = true;
-      this.editor.setReadOnly(false)
+      this.initLoading = false
     }
-    this.initLoading = false
+    //新增一个规则
+    else {
+      this.canEdit = true;
+      this.editor.setReadOnly(false);
+      this.editor.setValue(RuleApi.defaultRule());
+    }
   }
 }
 </script>

@@ -46,7 +46,7 @@
           width="100">
         <template #default="scope">
           <el-button @click="apiDetail(scope.row)" type="text" size="small">查看</el-button>
-          <el-button type="text" size="small">删除</el-button>
+          <el-button type="text" size="small" @click="deleteApi(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -84,12 +84,8 @@ export default {
   methods: {
     searchApi() {
       RuleApi.getRulePage(this.condition).then(res => {
-        if (res.data.code === 0) {
-          this.tableData = res.data.data.content;
-          this.total = res.data.data.totalElements;
-        } else {
-          this.$message.error('查询失败：' + res.data.message)
-        }
+        this.tableData = res.data.data.content;
+        this.total = res.data.data.totalElements;
       })
     },
     addApi() {
@@ -97,6 +93,24 @@ export default {
     },
     apiDetail(row) {
       this.$router.push({path: '/apiDetail', query: {id: row.id}})
+    },
+    deleteApi(row) {
+      this.$confirm('确认删除该规则?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        RuleApi.deleteRule(row.id).then(res => {
+          console.log(res)
+          this.$message.success('删除成功')
+          this.searchApi()
+        })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        });
+      });
     },
     handleSizeChange(pageSize) {
       this.condition.pageSize = pageSize

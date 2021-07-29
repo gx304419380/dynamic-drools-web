@@ -30,3 +30,35 @@ export function getRulePage(param) {
 export function getRule(id) {
     return axios.get('/rule/' + id)
 }
+
+export function deleteRule(id) {
+    return axios.delete('/rule?id=' + id)
+}
+
+export function defaultRule() {
+    return `package rules
+
+import com.fly.rule.entity.RuleResult
+import org.slf4j.Logger
+import org.springframework.context.ApplicationContext
+import java.util.Map
+import org.springframework.jdbc.core.JdbcTemplate
+
+rule "discount_rule_4"
+    when
+        param: Map()
+        result: RuleResult()
+        log: Logger()
+        context: ApplicationContext()
+        jdbc: JdbcTemplate()
+    then
+        log.info("param map={}", param);
+        r.setData("hello world!");
+        log.info("result = {}", result);
+end
+
+
+
+
+`
+}
