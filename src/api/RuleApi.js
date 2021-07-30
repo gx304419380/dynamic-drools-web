@@ -11,7 +11,7 @@ axios.interceptors.response.use(
     },
     error => {
         ElMessage.error(error)
-        return Promise.error(error);
+        return Promise.reject(error);
     }
 )
 
@@ -38,23 +38,23 @@ export function deleteRule(id) {
 export function defaultRule() {
     return `package rules
 
-import com.fly.rule.entity.RuleResult
+import com.fly.dynamic.entity.RuleResult
 import org.slf4j.Logger
-import org.springframework.context.ApplicationContext
 import java.util.Map
+import org.springframework.context.ApplicationContext
 import org.springframework.jdbc.core.JdbcTemplate
 
-rule "discount_rule_4"
+rule "dynamic_rule"
     when
         param: Map()
-        result: RuleResult()
+        res: RuleResult()
         log: Logger()
         context: ApplicationContext()
         jdbc: JdbcTemplate()
     then
         log.info("param map={}", param);
-        result.setData("hello world!");
-        log.info("result = {}", result);
+        res.setData("hello world!");
+        log.info("result = {}", res);
 end
 
 
